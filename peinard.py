@@ -76,7 +76,11 @@ def _reverseabsvalue(item, otheritem):
 
 def heuristic(totals):
     """
-    totals is expected as a dict: {person, credit}
+    Parameters
+    ----------
+
+    totals: a dict of object -> credit.
+        credit is a Decimal
     """
     #initialization
     debts = [
