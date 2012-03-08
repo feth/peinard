@@ -91,7 +91,7 @@ class Line(object):
 
     def __cmp__(self, other):
         """
-        std comparison
+        not the std comparison: uses absolute value
         """
         return int(self.value.compare_total_mag(other.value))
 
@@ -103,7 +103,7 @@ class Line(object):
         Assumes (and asserts) that self is the ower and other the lender.
         """
         assert self.value < 0
-        value = self.value.min_mag(other.value)
+        value = self.value.min_mag(other.value).copy_abs()
 
         other.value = CTX.subtract(other.value, value)
         self.value = CTX.add(self.value, value)
@@ -160,7 +160,7 @@ def heuristic(totals):
             result.add((debt.person, lend.person, lend.value))
             lends.remove(lend)
             debts.remove(debt)
-            continue  # continue the while
+            continue  # loop the while
 
         #continue to 2nd step?
         if not lends and not debts:
@@ -173,6 +173,7 @@ def heuristic(totals):
         biggestcredit = max(lends)
         # perform transfer
         transfer_value = biggestdebt.transfer(biggestcredit)
+        assert transfer_value > 0  # otherwise it's wicked.
         # add to results
         result.add((biggestdebt.person, biggestcredit.person,
             transfer_value))
