@@ -3,25 +3,38 @@ from decimal import Decimal
 import peinard
 
 
-def check_result(expected, result):
+def debug(expected, result, data):
+    return """expected:
+%s
+got:
+%s
+Input data was:
+%s""" % (expected, result, data)
+
+
+def check_result(data, expected):
     """
     expected result may be unordered
     """
-    assert len(expected) == len(result)
+    result = peinard.heuristic(data)
+    assert len(expected) == len(result), \
+        "length don't match.\n%s" % debug(expected, result, data)
+
     for transfer in expected:
-        assert transfer in result, "not fully reliable because of Decimal comparison"
+        assert transfer in result, \
+            "not fully reliable because of Decimal comparison.\n%s" \
+            % debug(expected, result, data)
+
 
 def test_cases():
-    result = peinard.heuristic(
-        {"a": Decimal(-2),
+    data = {"a": Decimal(-2),
         "b": Decimal(1),
-        "c": Decimal(1)})
+        "c": Decimal(1)}
     expected = [('a', 'c', Decimal('1')), ('a', 'b', Decimal('1'))]
-    check_result(expected, result)
+    check_result(data, expected)
 
-    peinard.heuristic(
-        {"a": Decimal(-1.1),
+    data = {"a": Decimal(-1.1),
         "b": Decimal(0.1),
-        "c": Decimal(1.0)})
+        "c": Decimal(1.0)}
     expected = [('a', 'c', Decimal('1')), ('a', 'c', Decimal('0.1'))]
-    check_result(expected, result)
+    check_result(data, expected)
