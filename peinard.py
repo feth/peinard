@@ -27,12 +27,16 @@ api:
     call heuristic(totals)
 
     where totals is a dict person -> credit.
-    For instance: {<object1>: 5, <object2>: -3, <object3>: -2}
+    For instance: {<object1>: mkdec(5), <object2>: (-3), <object3>: mkdec(-2)}
 
     you'll get a collection of transfer instructions, like:
         giver, receiver, value
 
-Requisite:
+Requisite 1:
+    Totals must be provided as decimal.Decimal.
+    It's maybe easier if you use the util function 'mkdec'
+
+Requisite 2:
     Totals must be balanced.
 
     Maybe evolution: drop this requisite and provide a NOBODY person,
@@ -52,6 +56,9 @@ from decimal import Decimal, getcontext
 
 DEC_O = Decimal(0)
 PRECISION = 6  # digits
+CTX = getcontext()
+CTX.prec = PRECISION
+
 
 
 def _exactmmatch(personstotals, total):
@@ -84,24 +91,21 @@ def heuristic(totals):
         credit is a Decimal
     """
     #initialization
-    # decimal context
-    context = getcontext()
-    context.prec = PRECISION
     # structures
     debts = [
-        [person, value]
+        [person, CTX.copy_decimal(value)]
         for person, value in totals.iteritems()
         if value < DEC_O
     ]
     lends = [
-        [person, value]
+        [person, CTX.copy_decimal(value)]
         for person, value in totals.iteritems()
         if value > DEC_O
     ]
     result = [
         (person, None, DEC_O)
         for person, value in totals.iteritems()
-        if value == DEC_O
+        if value.is_zero()
     ]
     #loop
     while lends or debts:
@@ -115,7 +119,7 @@ def heuristic(totals):
                     [person, value]
                 )
                 debts.remove(
-                    [match, - value]
+                    [match, value.copy_negate()]
                 )
         #continue to 2nd step?
         if not lends and not debts:
@@ -131,8 +135,8 @@ def heuristic(totals):
         #min_mag: minimum of absolute values
         transfer = biggestdebt.min_mag(biggestcredit)
         result.append((debts[0][0], lends[0][0], transfer))
-        debts[0][1] = context.add(biggestdebt, transfer)
-        lends[0][1] = context.subtract(biggestcredit, transfer, )
+        debts[0][1] = CTX.add(biggestdebt, transfer)
+        lends[0][1] = CTX.subtract(biggestcredit, transfer, )
         #purge
         for collection in (lends, debts):
             for item in tuple(collection):
@@ -140,3 +144,15 @@ def heuristic(totals):
                     collection.remove(item)
 
     return result
+
+
+def mkdec(value):
+    """
+    Util func: make decimals that look ok.
+    Use in place of decimal.Decimal constructor
+
+    Parameters
+    ----------
+    value: float, int (number)
+    """
+    return CTX.create_decimal(value)
