@@ -13,4 +13,4 @@ Doc is in the code module header.
 when developping
 ----------------
 
-Run 'nosetests' to check everything is ok (currently it isn't).
+Run 'nosetests' to check everything is ok.
