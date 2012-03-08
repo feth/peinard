@@ -49,7 +49,7 @@ How it works:
 
 from decimal import Decimal, getcontext, ROUND_FLOOR
 
-getcontext().rounding=ROUND_FLOOR
+getcontext().rounding = ROUND_FLOOR
 
 DEC_O = Decimal(0)
 PRECISION = Decimal("0.0000001")
@@ -65,6 +65,7 @@ def _exactmmatch(personstotals, total):
         if othertotal.quantize(PRECISION) != - total.quantize(PRECISION):
             continue
         return otherperson
+
 
 def _reverseabsvalue(item, otheritem):
     """
@@ -118,7 +119,7 @@ def heuristic(totals):
         #2nd step: make the biggest possible transfer
         biggestdebt = debts[0][1]
         biggestcredit = lends[0][1]
-        transfer = min( - biggestdebt, biggestcredit)
+        transfer = min(- biggestdebt, biggestcredit)
         result.append((debts[0][0], lends[0][0], transfer))
         debts[0][1] += transfer
         lends[0][1] -= transfer
