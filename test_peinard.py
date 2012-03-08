@@ -71,7 +71,8 @@ def test_generator():
     -expected output.
     """
     for name, data, expected in TEST_MATRIX:
-        perform.description = '''%s
+        test = lambda: perform(data, expected)
+        test.description = '''%s
 -input data: \t%s
 -expected: \t%s''' % (name, data, expected)
-        yield perform, data, expected
+        yield test
