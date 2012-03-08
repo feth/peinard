@@ -47,12 +47,11 @@ How it works:
         solve the 'problem' for one person at least.
 """
 
-from decimal import Decimal, getcontext, ROUND_FLOOR
+from decimal import Decimal, getcontext
 
-getcontext().rounding = ROUND_FLOOR
 
 DEC_O = Decimal(0)
-PRECISION = Decimal("0.0000001")
+PRECISION = 6  # digits
 
 
 def _exactmmatch(personstotals, total):
@@ -62,16 +61,18 @@ def _exactmmatch(personstotals, total):
     is not contained in personstotals
     """
     for otherperson, othertotal in personstotals:
-        if othertotal.quantize(PRECISION) != - total.quantize(PRECISION):
-            continue
-        return otherperson
+        if othertotal.compare_total_mag(total).is_zero():
+            return otherperson
 
 
 def _reverseabsvalue(item, otheritem):
     """
-    item, otheritem is expected as (*, number, ****)
+    Parameters
+    ----------
+    item: tuple with a Decimal as 2nd item
+    otheritem: tuple with a Decimal as 2nd item
     """
-    return cmp(abs(otheritem[1]), abs(item[1]))
+    return int(item[1].copy_abs().compare(otheritem[1].copy_abs()))
 
 
 def heuristic(totals):
@@ -83,6 +84,10 @@ def heuristic(totals):
         credit is a Decimal
     """
     #initialization
+    # decimal context
+    context = getcontext()
+    context.prec = PRECISION
+    # structures
     debts = [
         [person, value]
         for person, value in totals.iteritems()
@@ -123,14 +128,15 @@ def heuristic(totals):
         #2nd step: make the biggest possible transfer
         biggestdebt = debts[0][1]
         biggestcredit = lends[0][1]
-        transfer = min(- biggestdebt, biggestcredit)
+        #min_mag: minimum of absolute values
+        transfer = biggestdebt.min_mag(biggestcredit)
         result.append((debts[0][0], lends[0][0], transfer))
-        debts[0][1] += transfer
-        lends[0][1] -= transfer
+        debts[0][1] = context.add(biggestdebt, transfer)
+        lends[0][1] = context.subtract(biggestcredit, transfer, )
         #purge
         for collection in (lends, debts):
             for item in tuple(collection):
-                if item[1] == DEC_O:
+                if item[1].is_zero():
                     collection.remove(item)
 
     return result
