@@ -51,6 +51,7 @@ How it works:
         solve the 'problem' for one person at least.
 """
 
+from itertools import product
 from decimal import Decimal, getcontext
 
 
@@ -60,26 +61,64 @@ CTX = getcontext()
 CTX.prec = PRECISION
 
 
+def exactmatch(lends, debts):
+    """
+    returns first exact match in lends/debts list
 
-def _exactmmatch(personstotals, total):
+    (internal)
     """
-    personstotals is expected as a list of (person, credit)
-    The sign of credit is opposite to the sign of total and person
-    is not contained in personstotals
-    """
-    for otherperson, othertotal in personstotals:
-        if othertotal.compare_total_mag(total).is_zero():
-            return otherperson
+    for lend, debt in product(lends, debts):
+        if lend.is_exact_match(debt):
+            return debt, lend
+
+    # no match: return None
 
 
-def _reverseabsvalue(item, otheritem):
+class Line(object):
     """
-    Parameters
-    ----------
-    item: tuple with a Decimal as 2nd item
-    otheritem: tuple with a Decimal as 2nd item
+    Convenience internal object
     """
-    return int(item[1].copy_abs().compare(otheritem[1].copy_abs()))
+    def __init__(self, person, value):
+        """
+        Parameters
+        ----------
+
+        person: any object
+        value: decimal.Decimal (made with mkdec for instance)
+        """
+        self.person = person
+        self.value = value
+
+    def __cmp__(self, other):
+        """
+        std comparison
+        """
+        return int(self.value.compare_total_mag(other.value))
+
+    def transfer(self, other):
+        """
+        Perform biggest transfer possible between two Line.
+        Returns value
+
+        Assumes (and asserts) that self is the ower and other the lender.
+        """
+        assert self.value < 0
+        value = self.value.min_mag(other.value)
+
+        other.value = CTX.subtract(other.value, value)
+        self.value = CTX.add(self.value, value)
+
+        return value
+
+    def is_exact_match(self, other):
+        """
+        Returns: do the lines oppose?
+        """
+        return self.value.compare_total_mag(other.value).is_zero()
+
+    def __repr__(self):
+        return object.__repr__(self).replace('>', ' person:%s - value:%s>' %
+            (self.person, self.value))
 
 
 def heuristic(totals):
@@ -90,58 +129,58 @@ def heuristic(totals):
     totals: a dict of object -> credit.
         credit is a Decimal
     """
-    #initialization
     # structures
-    debts = [
-        [person, CTX.copy_decimal(value)]
-        for person, value in totals.iteritems()
-        if value < DEC_O
-    ]
-    lends = [
-        [person, CTX.copy_decimal(value)]
-        for person, value in totals.iteritems()
-        if value > DEC_O
-    ]
-    result = [
-        (person, None, DEC_O)
-        for person, value in totals.iteritems()
-        if value.is_zero()
-    ]
+    debts = set()
+    lends = set()
+    result = set()
+
+    for person, value in totals.iteritems():
+        if value.is_zero():
+            result.add((person, None, DEC_O))
+            continue
+
+        line = Line(person, CTX.copy_decimal(value))
+
+        if value > 0:
+            lends.add(line)
+            continue
+
+        debts.add(line)
+
+    assert all(lend.value > 0 for lend in lends), lends
+    assert all(debt.value < 0 for debt in debts), debts
+
     #loop
     while lends or debts:
         #1st step: exact matches
         #iter on a copy of lends
-        for person, value in tuple(lends):
-            match = _exactmmatch(debts, value)
-            if match:
-                result.append((match, person, value))
-                lends.remove(
-                    [person, value]
-                )
-                debts.remove(
-                    [match, value.copy_negate()]
-                )
+        match = exactmatch(lends, debts)
+        if match:
+            debt, lend = match
+            result.add((debt.person, lend.person, lend.value))
+            lends.remove(lend)
+            debts.remove(debt)
+            continue  # continue the while
+
         #continue to 2nd step?
         if not lends and not debts:
             break
         if bool(lends) != bool(debts):
             assert False, "Lends: %s, debts: %s" % (lends, debts)
-        #prepare 2nd step
-        debts.sort(_reverseabsvalue)
-        lends.sort(_reverseabsvalue)
-        #2nd step: make the biggest possible transfer
-        biggestdebt = debts[0][1]
-        biggestcredit = lends[0][1]
-        #min_mag: minimum of absolute values
-        transfer = biggestdebt.min_mag(biggestcredit)
-        result.append((debts[0][0], lends[0][0], transfer))
-        debts[0][1] = CTX.add(biggestdebt, transfer)
-        lends[0][1] = CTX.subtract(biggestcredit, transfer, )
-        #purge
-        for collection in (lends, debts):
-            for item in tuple(collection):
-                if item[1].is_zero():
-                    collection.remove(item)
+        # find the biggest possible transfer
+        # compute biggest transfer value
+        biggestdebt = max(debts)
+        biggestcredit = max(lends)
+        # perform transfer
+        transfer_value = biggestdebt.transfer(biggestcredit)
+        # add to results
+        result.add((biggestdebt.person, biggestcredit.person,
+            transfer_value))
+        # purge
+        if biggestdebt.value.is_zero():
+            debts.remove(biggestdebt)
+        if biggestcredit.value.is_zero():
+            lends.remove(biggestcredit)
 
     return result
 
