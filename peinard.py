@@ -89,12 +89,6 @@ class Line(object):
         self.person = person
         self.value = value
 
-    def __cmp__(self, other):
-        """
-        not the std comparison: uses absolute value
-        """
-        return int(self.value.compare_total_mag(other.value))
-
     def __lt__(self, other):
         """
         not the std comparison: uses absolute value
