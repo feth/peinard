@@ -5,4 +5,4 @@ python:
 install:
     - pip install nose coverage --use-mirrors
     - pip install . --use-mirrors
-script: nosetests --with-doctest --with-coverage
+script: nosetests --with-doctest --with-coverage --cover-package=peinard
