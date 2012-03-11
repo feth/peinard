@@ -95,6 +95,12 @@ class Line(object):
         """
         return int(self.value.compare_total_mag(other.value))
 
+    def __lt__(self, other):
+        """
+        not the std comparison: uses absolute value
+        """
+        return self.value.copy_abs() < other.value.copy_abs()
+
     def transfer(self, other):
         """
         Perform biggest transfer possible between two Line.
@@ -139,7 +145,7 @@ def heuristic(totals):
     lends = set()
     result = set()
 
-    for person, value in totals.iteritems():
+    for person, value in totals.items():
         if value.is_zero():
             result.add((person, None, DEC_O))
             continue
