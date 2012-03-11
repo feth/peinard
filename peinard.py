@@ -117,6 +117,11 @@ class Line(object):
         return self.value.compare_total_mag(other.value).is_zero()
 
     def __repr__(self):
+        """
+        >>> line = Line("a", 42)
+        >>> print(line)  # doctest: +ELLIPSIS
+        <peinard.Line object at 0x... person:a - value:42>
+        """
         return object.__repr__(self).replace('>', ' person:%s - value:%s>' %
             (self.person, self.value))
 
@@ -165,8 +170,7 @@ def heuristic(totals):
         #continue to 2nd step?
         if not lends and not debts:
             break
-        if bool(lends) != bool(debts):
-            assert False, "Lends: %s, debts: %s" % (lends, debts)
+        assert bool(lends) == bool(debts), "Lends: %s, debts: %s" % (lends, debts)
         # find the biggest possible transfer
         # compute biggest transfer value
         biggestdebt = max(debts)
