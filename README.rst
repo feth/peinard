@@ -2,6 +2,8 @@
 PEINARD
 =======
 
+.. image:: https://secure.travis-ci.org/feth/peinard.png?branch=master
+
 Algorithm to optimize money transfers to resolve debts.
 Code split from caillasse and velat. Aims to be used in ihatemoney.
 
