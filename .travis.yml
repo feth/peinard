@@ -4,4 +4,4 @@ python:
 install:
     - pip install nose --use-mirrors
     - pip install . --use-mirrors
-script: nosetests
+script: nosetests --with-doctest --with-coverage
